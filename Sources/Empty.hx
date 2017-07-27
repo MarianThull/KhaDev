@@ -4,8 +4,9 @@ import kha.Framebuffer;
 import kha.Scheduler;
 import kha.System;
 import kha.Assets;
+import kha.audio2.Audio;
 import kha.audio2.Audio1;
-import kha.audio2.AudioChannel;
+import kha.audio1.AudioChannel;
 import kha.math.FastMatrix3;
 import kha.Image;
 import kha.Scaler;
@@ -18,12 +19,14 @@ class Empty {
 	
 	public function new() {
 		Assets.loadEverything(function () {
-			backbuffer = Image.createRenderTarget(width, height);
-			Audio1.play(Assets.sounds.bills);
-
-			System.notifyOnRender(render);
-			Scheduler.addTimeTask(update, 0, 1 / 60);
+			return null;
 		});
+		
+		backbuffer = Image.createRenderTarget(width, height);
+
+		System.notifyOnRender(render);
+		Scheduler.addTimeTask(update, 0, 1 / 60);
+		musicChannel = Audio1.play(Assets.sounds.bills);
 	}
 
 	function update(): Void {
