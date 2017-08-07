@@ -4,7 +4,6 @@ import kha.Framebuffer;
 import kha.Scheduler;
 import kha.System;
 import kha.Assets;
-import kha.audio2.Audio;
 import kha.audio2.Audio1;
 import kha.audio1.AudioChannel;
 import kha.math.FastMatrix3;
@@ -26,7 +25,7 @@ class Empty {
 
 		System.notifyOnRender(render);
 		Scheduler.addTimeTask(update, 0, 1 / 60);
-		musicChannel = Audio1.play(Assets.sounds.bills);
+		musicChannel = Audio1.play(Assets.sounds.pigeon);
 	}
 
 	function update(): Void {
