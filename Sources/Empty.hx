@@ -21,6 +21,8 @@ class Empty {
 	private var startTime: Float;
 	private var time: Float;
 	private var paused = false;
+	private var rerunTest = false;
+	private var sound: kha.Sound;
 	
 	public function new() {
 		Assets.loadEverything(function () {
@@ -32,7 +34,9 @@ class Empty {
 
 		System.notifyOnRender(render);
 		Scheduler.addTimeTask(update, 0, 1 / 60);
-		ac = createAudioChannel(Assets.sounds.bills, false);
+		
+		sound = Assets.sounds.bbc;
+		ac = createAudioChannel(sound, false);
 		startTime = Scheduler.realTime();
 	}
 	
@@ -55,9 +59,13 @@ class Empty {
 			ac.play();
 			paused = false;
 		}
-		else if (time > 6) {
-			trace('Time: ${ac.position}/${ac.length}\tfinished: ${ac.finished}');
+		else if (time > 3 && !rerunTest) {
+			rerunTest = true;
+			createAudioChannel(sound, false);
 		}
+		//else if (time > 6) {
+			//trace('Time: ${ac.position}/${ac.length}\tfinished: ${ac.finished}');
+		//}
 	}
 
 	function render(framebuffer: Framebuffer): Void {		
