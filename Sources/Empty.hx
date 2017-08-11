@@ -52,20 +52,27 @@ class Empty {
 		time = Scheduler.realTime() - startTime;
 		if (time > 1 && time < 2 && !paused) {
 			ac.pause();
+			// ac.pause();
 			paused = true;
 		}
 		else if (time > 2 && paused) {
 			ac.volume = 0.5;
 			ac.play();
+			// ac.play();
 			paused = false;
 		}
 		else if (time > 3 && !rerunTest) {
 			rerunTest = true;
 			createAudioChannel(sound, false);
 		}
-		//else if (time > 6) {
-			//trace('Time: ${ac.position}/${ac.length}\tfinished: ${ac.finished}');
-		//}
+		else if (time > 4) {
+			//ac.stop();
+			//ac.play();
+			trace('Time: ${ac.position}/${ac.length}\tfinished: ${ac.finished}\tvolume: ${ac.volume}');
+		}
+		if (time > 18) {
+			ac.play();
+		}
 	}
 
 	function render(framebuffer: Framebuffer): Void {		
