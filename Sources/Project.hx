@@ -57,13 +57,13 @@ class Project {
 
 	function render(framebuffer: Framebuffer): Void {
 		var g = backbuffer.g2;
-		// g.font = Assets.fonts.arial;
-		// g.fontSize = 12;
+		//g.font = Assets.fonts.arial;
+		g.fontSize = 18;
 		g.begin();
 		g.color = kha.Color.Orange;
 		g.drawRect(0, 0, width, height, 4);
 		g.drawLine(lineX0, lineY0, lineX1, lineY1, 4);
-		// g.drawString('(${posX}, ${posY})', 0, 0);
+		//g.drawString('(${posX}, ${posY})', 920, 730);
 		trace('(${posX}, ${posY})');
 		g.color = kha.Color.Black;
 		g.end();
