@@ -1,5 +1,5 @@
 package;
-import kha.Key;
+import kha.input.KeyCode;
 import kha.input.Keyboard;
 import kha.input.Mouse;
 import kha.math.FastMatrix4;
@@ -70,33 +70,35 @@ class Camera
         mouseY = y;
     }
 
-    public function keyDown(key:Key, char:String):Void 
+    public function keyDown(key:KeyCode):Void 
     {
-        var keyCode:Int = char.toUpperCase().charCodeAt(0);
-        switch(keyCode) {
-            case 87:
+        switch(key) {
+            case W:
                 moveForward = true;
-            case 83:
+            case S:
                 moveBackward = true;
-            case 65:
+            case A:
                 strafeLeft = true;
-            case 68:
+            case D:
                 strafeRight = true;
+            default:
+                return;
         }
     }
 
-    public function keyUp(key:Key, char:String):Void  
+    public function keyUp(key:KeyCode):Void  
     {
-        var keyCode:Int = char.toUpperCase().charCodeAt(0);
-        switch(keyCode) {
-            case 87:
+        switch(key) {
+            case W:
                 moveForward = false;
-            case 83:
+            case S:
                 moveBackward = false;
-            case 65:
+            case A:
                 strafeLeft = false;
-            case 68:
+            case D:
                 strafeRight = false;
+            default:
+                return;
         }
     }
 

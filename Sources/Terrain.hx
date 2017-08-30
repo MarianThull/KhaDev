@@ -1,5 +1,6 @@
 package;
 import kha.arrays.Float32Array;
+import kha.arrays.Uint32Array;
 import kha.graphics4.IndexBuffer;
 import kha.graphics4.Usage;
 import kha.graphics4.VertexBuffer;
@@ -75,7 +76,7 @@ class Terrain
         vertexBuffer.unlock();
 
         indexBuffer = new IndexBuffer(indices.length, Usage.StaticUsage);
-        var iData:Array<Int> = indexBuffer.lock();
+        var iData:Uint32Array = indexBuffer.lock();
         for (i in 0...iData.length) {
             iData[i] = indices[i];
         }
