@@ -7,6 +7,8 @@ import kha.Image;
 import kha.Scheduler;
 import kha.Shaders;
 import kha.System;
+import kha.arrays.Float32Array;
+import kha.arrays.Uint32Array;
 import kha.graphics4.DepthStencilFormat;
 import kha.graphics4.Graphics;
 import kha.graphics4.TextureFormat;
@@ -17,11 +19,14 @@ import kha.graphics4.CullMode;
 import kha.graphics4.Graphics;
 import kha.graphics4.MipMapFilter;
 import kha.graphics4.PipelineState;
+import kha.graphics4.Usage;
 import kha.graphics4.TextureAddressing;
 import kha.graphics4.TextureFilter;
 import kha.graphics4.TextureUnit;
 import kha.graphics4.VertexData;
 import kha.graphics4.VertexStructure;
+import kha.graphics4.VertexBuffer;
+import kha.graphics4.IndexBuffer;
 import kha.math.FastMatrix4;
 
 
@@ -41,6 +46,15 @@ class Project
     private var texID:TextureUnit;
     private var pipeline:PipelineState;
     private var vertexStructure:VertexStructure;
+    /* skybox pipeline stuff */
+    private var projectionMatrixSkyID:ConstantLocation;
+    private var viewMatrixSkyID:ConstantLocation;
+    private var pipelineSky:PipelineState;
+    private var texSkyID:TextureUnit;
+    private var vertexStructureSky:VertexStructure;
+    private var vertexBufferSky:VertexBuffer;
+    private var indexBufferSky:IndexBuffer;
+
     public function new() 
     {
         camera = new Camera();
@@ -77,7 +91,72 @@ class Project
         projectionMatrixID = pipeline.getConstantLocation("projectionMatrix");
         modelMatrixID = pipeline.getConstantLocation("modelMatrix");
         viewMatrixID = pipeline.getConstantLocation("viewMatrix");
+
+        /* prepare pipeline for skybox */
+        vertexStructureSky = new VertexStructure();
+        vertexStructureSky.add("vertexPosition", VertexData.Float3);
+
+        pipelineSky = new PipelineState();
+        pipelineSky.inputLayout = [vertexStructureSky];
+        pipelineSky.vertexShader = Shaders.skybox_vert;
+        pipelineSky.fragmentShader = Shaders.skybox_frag;
+
+        pipelineSky.depthWrite = false;
+        pipelineSky.depthMode = CompareMode.Less;
+        pipelineSky.cullMode = CullMode.Clockwise;
+        pipelineSky.blendSource = BlendingFactor.BlendOne;
+        pipelineSky.blendDestination = BlendingFactor.InverseSourceAlpha;
+        pipelineSky.alphaBlendSource = BlendingFactor.SourceAlpha;
+        pipelineSky.alphaBlendDestination = BlendingFactor.InverseSourceAlpha;
+
+        pipelineSky.compile();
+
+        projectionMatrixSkyID = pipelineSky.getConstantLocation("projectionMatrix");
+        viewMatrixSkyID = pipelineSky.getConstantLocation("viewMatrix");
+        texSkyID = pipelineSky.getTextureUnit("cubemap");
         
+        /* create indexed vertices for unit cube */
+        var data:Array<Float> = [];
+        var indices:Array<Int> = [];
+
+        for (x in -1...2) {
+            if (x == 0) continue;
+            for (y in -1...2) {
+                if (y == 0) continue;
+                for (z in -1...2) {
+                    if (z == 0) continue;
+                    data.push(x);
+                    data.push(y);
+                    data.push(z);
+                }
+            }
+        }
+        var faces:Array<Array<Int>> = [[0, 1, 3, 2], [1, 5, 6, 3], [5, 4, 6, 7],
+                                       [4, 0, 2, 6], [2, 3, 7, 6], [0, 4, 5, 1]];
+        for (face in faces) {
+            indices.push(face[0]);
+            indices.push(face[1]);
+            indices.push(face[3]);
+
+            indices.push(face[1]);
+            indices.push(face[2]);
+            indices.push(face[3]);
+        }
+
+        vertexBufferSky = new VertexBuffer(Std.int(data.length / vertexStructureSky.byteSize() * 4), vertexStructureSky, Usage.StaticUsage);
+        var vbData:Float32Array = vertexBufferSky.lock();
+        for (i in 0...vbData.length) {
+            vbData.set(i, data[i]);
+        }
+        vertexBufferSky.unlock();
+
+        indexBufferSky = new IndexBuffer(indices.length, Usage.StaticUsage);
+        var iData:Uint32Array = indexBufferSky.lock();
+        for (i in 0...iData.length) {
+            iData[i] = indices[i];
+        }
+        indexBufferSky.unlock();
+
         //---------------------------------------------------------------------
         terrain = new Terrain(vertexStructure);
         
