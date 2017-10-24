@@ -15,6 +15,7 @@ import kha.graphics4.TextureFormat;
 import kha.graphics4.BlendingFactor;
 import kha.graphics4.CompareMode;
 import kha.graphics4.ConstantLocation;
+import kha.graphics4.CubeMap;
 import kha.graphics4.CullMode;
 import kha.graphics4.Graphics;
 import kha.graphics4.MipMapFilter;
@@ -46,6 +47,12 @@ class Project
     private var texID:TextureUnit;
     private var pipeline:PipelineState;
     private var vertexStructure:VertexStructure;
+    /* cubemap pipeline stuff */
+    private var texFaceID:TextureUnit;
+    private var vertexStructureFace:VertexStructure;
+    private var vertexBufferFace:VertexBuffer;
+    private var indexBufferFace:IndexBuffer;
+    private var pipelineFace:PipelineState;
     /* skybox pipeline stuff */
     private var projectionMatrixSkyID:ConstantLocation;
     private var viewMatrixSkyID:ConstantLocation;
@@ -54,9 +61,13 @@ class Project
     private var vertexStructureSky:VertexStructure;
     private var vertexBufferSky:VertexBuffer;
     private var indexBufferSky:IndexBuffer;
+    private var cubemapSky:CubeMap;
 
     public function new() 
     {
+        Assets.loadEverything(function():Void {
+        });
+
         camera = new Camera();
         
         
@@ -92,6 +103,20 @@ class Project
         modelMatrixID = pipeline.getConstantLocation("modelMatrix");
         viewMatrixID = pipeline.getConstantLocation("viewMatrix");
 
+        /* prepare pipeline for cubemap faces */
+        vertexStructureFace = new VertexStructure();
+        vertexStructureFace.add("vertexPosition", VertexData.Float3);
+
+        pipelineFace = new PipelineState();
+        pipelineFace.inputLayout = [vertexStructureFace];
+        pipelineFace.vertexShader = Shaders.texToFace_vert;
+        pipelineFace.fragmentShader = Shaders.texToFace_frag;
+        pipelineFace.depthWrite = false;
+
+        pipelineFace.compile();
+
+        texFaceID = pipelineFace.getTextureUnit("tex");
+
         /* prepare pipeline for skybox */
         vertexStructureSky = new VertexStructure();
         vertexStructureSky.add("vertexPosition", VertexData.Float3);
@@ -102,8 +127,8 @@ class Project
         pipelineSky.fragmentShader = Shaders.skybox_frag;
 
         pipelineSky.depthWrite = false;
-        pipelineSky.depthMode = CompareMode.Less;
-        pipelineSky.cullMode = CullMode.Clockwise;
+        pipelineSky.depthMode = CompareMode.Always;
+        pipelineSky.cullMode = CullMode.None;
         pipelineSky.blendSource = BlendingFactor.BlendOne;
         pipelineSky.blendDestination = BlendingFactor.InverseSourceAlpha;
         pipelineSky.alphaBlendSource = BlendingFactor.SourceAlpha;
@@ -114,7 +139,45 @@ class Project
         projectionMatrixSkyID = pipelineSky.getConstantLocation("projectionMatrix");
         viewMatrixSkyID = pipelineSky.getConstantLocation("viewMatrix");
         texSkyID = pipelineSky.getTextureUnit("cubemap");
+
+        cubemapSky = CubeMap.createRenderTarget(2048);
         
+        /* create indexed vertices for cube face */
+        var dataCube:Array<Float> = [];
+        var indicesCube:Array<Int> = [];
+
+        for (x in -1...2) {
+            if (x == 0) continue;
+            for (y in -1...2) {
+                if (y == 0) continue;
+                dataCube.push(x);
+                dataCube.push(y);
+                dataCube.push(1);
+            }
+        }
+        indicesCube.push(0);
+        indicesCube.push(2);
+        indicesCube.push(1);
+        indicesCube.push(2);
+        indicesCube.push(3);
+        indicesCube.push(1);
+
+        vertexBufferFace = new VertexBuffer(Std.int(dataCube.length / vertexStructureFace.byteSize() * 4), vertexStructureFace, Usage.StaticUsage);
+        var vbData:Float32Array;
+        vbData = vertexBufferFace.lock();
+        for (i in 0...vbData.length) {
+            vbData.set(i, dataCube[i]);
+        }
+        vertexBufferFace.unlock();
+
+        indexBufferFace = new IndexBuffer(indicesCube.length, Usage.StaticUsage);
+        var iData:Uint32Array;
+        iData = indexBufferFace.lock();
+        for (i in 0...iData.length) {
+            iData[i] = indicesCube[i];
+        }
+        indexBufferFace.unlock();
+
         /* create indexed vertices for unit cube */
         var data:Array<Float> = [];
         var indices:Array<Int> = [];
@@ -125,9 +188,9 @@ class Project
                 if (y == 0) continue;
                 for (z in -1...2) {
                     if (z == 0) continue;
-                    data.push(x);
-                    data.push(y);
-                    data.push(z);
+                    data.push(x * 10.0);
+                    data.push(y * 10.0);
+                    data.push(z * 10.0);
                 }
             }
         }
@@ -144,14 +207,14 @@ class Project
         }
 
         vertexBufferSky = new VertexBuffer(Std.int(data.length / vertexStructureSky.byteSize() * 4), vertexStructureSky, Usage.StaticUsage);
-        var vbData:Float32Array = vertexBufferSky.lock();
+        vbData = vertexBufferSky.lock();
         for (i in 0...vbData.length) {
             vbData.set(i, data[i]);
         }
         vertexBufferSky.unlock();
 
         indexBufferSky = new IndexBuffer(indices.length, Usage.StaticUsage);
-        var iData:Uint32Array = indexBufferSky.lock();
+        iData = indexBufferSky.lock();
         for (i in 0...iData.length) {
             iData[i] = indices[i];
         }
@@ -168,23 +231,86 @@ class Project
     {
         camera.update(0.16);
      
+        // render skybox faces
+        cubemapSky.g4.beginFace(0);
+        cubemapSky.g4.clear(0xFFFFFFFF, 1.0);
+        cubemapSky.g4.setPipeline(pipelineFace);
+        cubemapSky.g4.setIndexBuffer(indexBufferFace);
+        cubemapSky.g4.setVertexBuffer(vertexBufferFace);
+        cubemapSky.g4.setTexture(texFaceID, Assets.images.posx);
+        cubemapSky.g4.drawIndexedVertices();
+        cubemapSky.g4.end();
+
+        cubemapSky.g4.beginFace(1);
+        cubemapSky.g4.clear(0xFFFFFFFF, 1.0);
+        cubemapSky.g4.setPipeline(pipelineFace);
+        cubemapSky.g4.setIndexBuffer(indexBufferFace);
+        cubemapSky.g4.setVertexBuffer(vertexBufferFace);
+        cubemapSky.g4.setTexture(texFaceID, Assets.images.negx);
+        cubemapSky.g4.drawIndexedVertices();
+        cubemapSky.g4.end();
+
+        cubemapSky.g4.beginFace(2);
+        cubemapSky.g4.clear(0xFFFFFFFF, 1.0);
+        cubemapSky.g4.setPipeline(pipelineFace);
+        cubemapSky.g4.setIndexBuffer(indexBufferFace);
+        cubemapSky.g4.setVertexBuffer(vertexBufferFace);
+        cubemapSky.g4.setTexture(texFaceID, Assets.images.posy);
+        cubemapSky.g4.drawIndexedVertices();
+        cubemapSky.g4.end();
+
+        cubemapSky.g4.beginFace(3);
+        cubemapSky.g4.clear(0xFFFFFFFF, 1.0);
+        cubemapSky.g4.setPipeline(pipelineFace);
+        cubemapSky.g4.setIndexBuffer(indexBufferFace);
+        cubemapSky.g4.setVertexBuffer(vertexBufferFace);
+        cubemapSky.g4.setTexture(texFaceID, Assets.images.negy);
+        cubemapSky.g4.drawIndexedVertices();
+        cubemapSky.g4.end();
+
+        cubemapSky.g4.beginFace(4);
+        cubemapSky.g4.clear(0xFFFFFFFF, 1.0);
+        cubemapSky.g4.setPipeline(pipelineFace);
+        cubemapSky.g4.setIndexBuffer(indexBufferFace);
+        cubemapSky.g4.setVertexBuffer(vertexBufferFace);
+        cubemapSky.g4.setTexture(texFaceID, Assets.images.posz);
+        cubemapSky.g4.drawIndexedVertices();
+        cubemapSky.g4.end();
+
+        cubemapSky.g4.beginFace(5);
+        cubemapSky.g4.clear(0xFFFFFFFF, 1.0);
+        cubemapSky.g4.setPipeline(pipelineFace);
+        cubemapSky.g4.setIndexBuffer(indexBufferFace);
+        cubemapSky.g4.setVertexBuffer(vertexBufferFace);
+        cubemapSky.g4.setTexture(texFaceID, Assets.images.negz);
+        cubemapSky.g4.drawIndexedVertices();
+        cubemapSky.g4.end();
+
+        // begin rendering to frame
         var g4:Graphics = bb1.g4;
         
         g4.begin(targets);
         g4.clear(0xFFFFFFFF, 1.0);
+
+        // render skybox
+        g4.setPipeline(pipelineSky);
+        g4.setMatrix(viewMatrixSkyID, camera.viewMatrix);
+        g4.setMatrix(projectionMatrixSkyID, camera.projectionMatrix);
+        g4.setCubeMap(texSkyID, cubemapSky);
+        g4.setIndexBuffer(indexBufferSky);
+        g4.setVertexBuffer(vertexBufferSky);
+        g4.drawIndexedVertices();
+
+        // draw terrain
         g4.setPipeline(pipeline);
-        //set matrices
         g4.setMatrix(modelMatrixID, terrain.modelMatrix);
         g4.setMatrix(viewMatrixID, camera.viewMatrix);
         g4.setMatrix(projectionMatrixID, camera.projectionMatrix);
-        
-        //draw terrain's
         g4.setIndexBuffer(terrain.indexBuffer);
         g4.setVertexBuffer(terrain.vertexBuffer);
         g4.drawIndexedVertices();
         
         g4.end();
-        
         
         
         framebuffer.g2.begin();
@@ -193,10 +319,10 @@ class Project
         var posY:Int = 0;
         if (g4.renderTargetsInvertedY()){
             framebuffer.g2.drawScaledImage(bb1, 0, Main.height, Main.width, -Main.height);
-            framebuffer.g2.drawScaledImage(bb2, 0, 144, 256, -144); 
+            // framebuffer.g2.drawScaledImage(bb2, 0, 144, 256, -144); 
         } else {
             framebuffer.g2.drawImage(bb1, 0, 0);
-            framebuffer.g2.drawScaledImage(bb2, 0, 0, 256, 144); 
+            // framebuffer.g2.drawScaledImage(bb2, 0, 0, 256, 144); 
         }
         
 
