@@ -47,7 +47,7 @@ class Main {
 		centerOfMassOffsetTransform.setIdentity();
 		var groundMotionState = BtDefaultMotionState.create(groundTransform, centerOfMassOffsetTransform);
 
-		var groundRigidBodyCI = BtRigidBodyConstructionInfo.create(0.01, groundMotionState, groundShape, BtVector3.create(0, 0, 0));
+		var groundRigidBodyCI = BtRigidBodyConstructionInfo.create(0, groundMotionState, groundShape, BtVector3.create(0, 0, 0));
 		var groundRigidBody = BtRigidBody.create(groundRigidBodyCI);
 		dynamicsWorld.addRigidBody(groundRigidBody);
 
