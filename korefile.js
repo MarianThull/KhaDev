@@ -1,13 +1,11 @@
 let fs = require('fs');
 let path = require('path');
-let project = new Project('AndrNatDebug', __dirname);
+let project = new Project('PhysicsSample');
 project.targetOptions = {"html5":{},"flash":{},"android":{},"ios":{}};
-project.setDebugDir('build/android-native');
-Promise.all([Project.createProject('build/android-native-build', __dirname), Project.createProject('C:/Users/Dev/KOM/KhaDev/kha', __dirname), Project.createProject('C:/Users/Dev/KOM/KhaDev/kha/Kore', __dirname)]).then((projects) => {
-	for (let p of projects) project.addSubProject(p);
-	let libs = [];
-	Promise.all(libs).then((libprojects) => {
-		for (let p of libprojects) project.addSubProject(p);
-		resolve(project);
-	});
-});
+project.setDebugDir('build/windows');
+await project.addProject('build/windows-build');
+await project.addProject('C:/Users/Marian/KOM/KhaDev/Kha');
+if (fs.existsSync(path.join('Libraries/Bullet', 'korefile.js'))) {
+	await project.addProject('Libraries/Bullet');
+}
+resolve(project);
