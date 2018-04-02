@@ -1,3 +1,6 @@
 [submodule "Kha"]
 	path = Kha
 	url = https://github.com/MarianThull/Kha.git
+[submodule "Libraries/Bullet"]
+	path = Libraries/Bullet
+	url = https://github.com/Kha-Samples/haxebullet.git
