@@ -3,6 +3,7 @@ project.addAssets('Assets/**');
 if (platform === 'html5' || platform === 'krom' || platform === 'node' || platform === 'debug-html5') {
 	project.addAssets('Libraries/Bullet/js/ammo/ammo.js');
 }
+project.addShaders('Sources/Shaders/**');
 project.addSources('Sources');
 project.addLibrary('Bullet');
 resolve(project);
