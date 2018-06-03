@@ -6,10 +6,14 @@ import kha.Framebuffer;
 import kha.Scheduler;
 import kha.System;
 import kha.Assets;
+import kha.math.FastMatrix4;
+import kha.math.FastVector3;
 
 class Main {
 	static var meshes = new Array<MeshLoader>();
-	static var ring;
+	static var rings = new Array<RingShape>();
+	static var dynamicsWorld;
+	static var viewMatrix = FastMatrix4.lookAt(new FastVector3(0, 50, -25), new FastVector3(0, 0, 0), new FastVector3(0, 1, 0));
 
 	public static function main() {
 		System.init({title: "PhysicsSample", width: 1024, height: 768}, function () {
@@ -35,24 +39,25 @@ class Main {
 	}
 
 	static function init2(): Void {
-		var mesh = new MeshLoader(Assets.blobs.body_ogex, 0.02);
-		var mesh2 = new MeshLoader(Assets.blobs.body_ogex, 0.02);
-		var mesh3 = new MeshLoader(Assets.blobs.body_ogex, 0.02);
-		meshes.push(mesh);
-		meshes.push(mesh2);
-		meshes.push(mesh3);
-
 		initPhysics();
 
-		ring = new RingShape(2.0, 1.0, 0.5, 16, 16, dynamicsWorld);
-		ring.setPosition(0, 30, 0);
+		for (i in 0...4) {
+			var mesh = new MeshLoader(Assets.blobs.body_ogex, 0.02, dynamicsWorld);
+			meshes.push(mesh);
+			mesh.setPosition(0.0, 15.0 + i * 5.0, 0.0);	
+		}
+
+		for (i in 0...5) {
+			var ring = new RingShape(2.0, 1.0, 0.5, 16, 16, dynamicsWorld);
+			rings.push(ring);
+			ring.setPosition(0, 17.5 + i * 5.0, 0);
+		}
 
 		System.notifyOnRender(render);
 		Scheduler.addTimeTask(update, 0, 1 / 60);
 	}
 
-	static var dynamicsWorld;
-	static var fallRigidBodies = new Array<BtRigidBody>();
+	
 
 	static function initPhysics(): Void {
 		var collisionConfiguration = BtDefaultCollisionConfiguration.create();
@@ -73,39 +78,17 @@ class Main {
 		var groundRigidBodyCI = BtRigidBodyConstructionInfo.create(0, groundMotionState, groundShape, BtVector3.create(0, 0, 0));
 		var groundRigidBody = BtRigidBody.create(groundRigidBodyCI);
 		dynamicsWorld.addRigidBody(groundRigidBody);
-
-		for (i in 0...3) {
-			while (!meshes[i].started) {
-				continue;
-			}
-			var fallShape = meshes[i].convexHull;
-			var fallTransform = BtTransform.create();
-			fallTransform.setIdentity();
-			fallTransform.setOrigin(BtVector3.create(i * 10 * Math.pow(-1, i), 100 + i * 100, i * 10 * Math.pow(-1, i)));
-			var centerOfMassOffsetFallTransform = BtTransform.create();
-			centerOfMassOffsetFallTransform.setIdentity();
-			var fallMotionState = BtDefaultMotionState.create(fallTransform, centerOfMassOffsetFallTransform);
-
-			var fallInertia = BtVector3.create(0, 0, 0);
-			fallShape.calculateLocalInertia(1, fallInertia);
-			var fallRigidBodyCI = BtRigidBodyConstructionInfo.create(1, fallMotionState, fallShape, fallInertia);
-			var fallRigidBody = BtRigidBody.create(fallRigidBodyCI);
-			dynamicsWorld.addRigidBody(fallRigidBody);
-			fallRigidBodies.push(fallRigidBody);
-		}
 	}
 
 	static function update(): Void {
 		dynamicsWorld.stepSimulation(1 / 60);
 	
 		for (i in 0...meshes.length) {
-			var trans = BtTransform.create();
-			var m = fallRigidBodies[i].getMotionState();
-			m.getWorldTransform(trans);
-			meshes[i].updatePosition(trans);
-			// meshes[i].updatePosition(trans.getOrigin().x(), trans.getOrigin().y(), trans.getOrigin().z());
+			meshes[i].updatePosition();
 		}
-		ring.updatePosition();
+		for (i in 0...rings.length) {
+			rings[i].updatePosition();
+		}
 	}
 
 	static function render(framebuffer: Framebuffer): Void {
@@ -114,9 +97,11 @@ class Main {
 		g.clear(Color.Black, Math.POSITIVE_INFINITY);
 
 		for (i in 0...meshes.length) {
-			meshes[i].render(g);
+			meshes[i].render(g, viewMatrix);
 		}
-		ring.render(g);
+		for (i in 0...rings.length) {
+			rings[i].render(g, viewMatrix);
+		}
 
 		g.end();
 	}

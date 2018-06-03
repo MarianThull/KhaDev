@@ -12,7 +12,6 @@ import kha.graphics4.VertexData;
 import kha.graphics4.VertexStructure;
 import kha.Shaders;
 import kha.math.FastMatrix4;
-import kha.math.FastVector3;
 import kha.System;
 import kha.math.Quaternion;
 
@@ -248,7 +247,6 @@ class RingShape {
 		var rotKha = new Quaternion(rot.x(), rot.y(), rot.z(), rot.w());
 		var rotMat = FastMatrix4.fromMatrix4(rotKha.matrix());
 		modelMatrix = FastMatrix4.translation(origin.x(), origin.y(), origin.z()).multmat(rotMat);
-		trace(origin.y());
 	}
 
 	public function setPosition(x:Float, y:Float, z:Float): Void {
@@ -258,10 +256,10 @@ class RingShape {
 		ringRigidBody.setCenterOfMassTransform(trans);
 	}
 
-	public function render(g:Graphics): Void {
+	public function render(g:Graphics, view:FastMatrix4): Void {
 		g.setPipeline(pipeline);
 		g.setMatrix(projectionLocation, FastMatrix4.perspectiveProjection(45, System.windowWidth(0) / System.windowHeight(0), 0.1, 1000));
-		g.setMatrix(viewLocation, FastMatrix4.lookAt(new FastVector3(0, 800, -500), new FastVector3(0, 0, 0), new FastVector3(0, 1, 0)));
+		g.setMatrix(viewLocation, view);
 		g.setMatrix(modelLocation, modelMatrix);
 		
 		g.setIndexBuffer(indexBuffer);
