@@ -28,13 +28,33 @@ class RingShape {
 	private var ringRigidBody: BtRigidBody;
 	
 	public function new(outerDiameter:Float, innerDiameter:Float, height:Float, renderResolution:Int, physicsResolution:Int, dynamicsWorld:BtDiscreteDynamicsWorld) {
-		var physicsVertices = createVertices(outerDiameter, innerDiameter, height, physicsResolution, false);
+		var physicsVertices = createVerticesPhysics(outerDiameter, innerDiameter, height, physicsResolution);
 		registerPhysicsObject(physicsVertices, dynamicsWorld);
-		var renderVertices = createVertices(outerDiameter, innerDiameter, height, renderResolution, true);
+		var renderVertices = createVerticesRender(outerDiameter, innerDiameter, height, renderResolution);
 		prepareRenderObject(renderVertices, renderResolution);
 	}
 
-	private function createVertices(outerDiameter:Float, innerDiameter:Float, height:Float, segments:Int, usageRender:Bool): Array<Float> {
+	private function createVerticesPhysics(outerDiameter:Float, innerDiameter:Float, height:Float, segments:Int): Array<Float> {
+		var vertices = new Array<Float>();
+
+		for (i in 0...segments) {
+			var angle:Float = (2 * Math.PI / segments) * i;
+			for (j in 0...4) {
+				var is_lower = Std.int(j / 2);
+				var is_outer = if(j == 1 || j == 2) 1 else 0;
+
+				var x = Math.cos(angle) * (innerDiameter * (1 - is_outer) + outerDiameter * is_outer);
+				var y = Math.pow(-1.0, is_lower) * height / 2.0;
+				var z = Math.sin(angle) * (innerDiameter * (1 - is_outer) + outerDiameter * is_outer);
+				vertices.push(x);
+				vertices.push(y);
+				vertices.push(z);
+			}
+		}
+		return vertices;
+	}
+
+	private function createVerticesRender(outerDiameter:Float, innerDiameter:Float, height:Float, segments:Int): Array<Float> {
 		var vertices = new Array<Float>();
 
 		for (i in 0...segments) {
@@ -47,58 +67,69 @@ class RingShape {
 				var x = Math.cos(angle) * (innerDiameter * (1 - is_outer) + outerDiameter * is_outer);
 				var y = Math.pow(-1.0, is_lower) * height / 2.0;
 				var z = Math.sin(angle) * (innerDiameter * (1 - is_outer) + outerDiameter * is_outer);
-				vertices.push(x);
-				vertices.push(y);
-				vertices.push(z);
-				if (usageRender) {
-					var lengthXZ = Math.sqrt(x*x + z*z);
-					var xn = ((is_outer * 2 - 1) * x / lengthXZ) / Math.sqrt(2.0);
-					var zn = ((is_outer * 2 - 1) * z / lengthXZ) / Math.sqrt(2.0);
-					var yn = -(is_lower * 2 - 1) / Math.sqrt(2.0);
-					vertices.push(xn);
-					vertices.push(yn);
-					vertices.push(zn);
+
+				var lengthXZ = Math.sqrt(x*x + z*z);
+				var xn = ((is_outer * 2 - 1) * x / lengthXZ);
+				var zn = ((is_outer * 2 - 1) * z / lengthXZ);
+				var yn = -(is_lower * 2 - 1);
+
+				for (k in 0...2) {
+					// vertex
+					vertices.push(x);
+					vertices.push(y);
+					vertices.push(z);
+					// normal
+					var is_up_down_normal = (is_lower + is_outer + k) % 2;
+					if (is_up_down_normal == 1) {
+						vertices.push(0.0);
+						vertices.push(yn);
+						vertices.push(0.0);
+					}
+					else {
+						vertices.push(xn);
+						vertices.push(0.0);
+						vertices.push(zn);
+					}
+					
 				}
 			}
 
-			if (usageRender) {
-				angle = (2 * Math.PI / segments) * (i + 0.5);
-				var avgDiameter = (outerDiameter + innerDiameter) / 2.0;
-				// top
-				vertices.push(Math.cos(angle) * avgDiameter);
-				vertices.push(height / 2.0);
-				vertices.push(Math.sin(angle) * avgDiameter);
-				vertices.push(0.0);
-				vertices.push(1.0);
-				vertices.push(0.0);
-				// out
-				var x = Math.cos(angle) * outerDiameter;
-				var z = Math.sin(angle) * outerDiameter;
-				var lengthXZ = Math.sqrt(x*x + z*z);
-				vertices.push(x);
-				vertices.push(0.0);
-				vertices.push(z);
-				vertices.push(x / lengthXZ);
-				vertices.push(0.0);
-				vertices.push(z / lengthXZ);
-				// bottom
-				vertices.push(Math.cos(angle) * avgDiameter);
-				vertices.push(height / -2.0);
-				vertices.push(Math.sin(angle) * avgDiameter);
-				vertices.push(0.0);
-				vertices.push(-1.0);
-				vertices.push(0.0);
-				// in
-				var x = Math.cos(angle) * innerDiameter;
-				var z = Math.sin(angle) * innerDiameter;
-				var lengthXZ = Math.sqrt(x*x + z*z);
-				vertices.push(x);
-				vertices.push(0.0);
-				vertices.push(z);
-				vertices.push(-x / lengthXZ);
-				vertices.push(0.0);
-				vertices.push(-z / lengthXZ);
-			}		
+			angle = (2 * Math.PI / segments) * (i + 0.5);
+			var avgDiameter = (outerDiameter + innerDiameter) / 2.0;
+			// top
+			vertices.push(Math.cos(angle) * avgDiameter);
+			vertices.push(height / 2.0);
+			vertices.push(Math.sin(angle) * avgDiameter);
+			vertices.push(0.0);
+			vertices.push(1.0);
+			vertices.push(0.0);
+			// out
+			var x = Math.cos(angle) * outerDiameter;
+			var z = Math.sin(angle) * outerDiameter;
+			var lengthXZ = Math.sqrt(x*x + z*z);
+			vertices.push(x);
+			vertices.push(0.0);
+			vertices.push(z);
+			vertices.push(x / lengthXZ);
+			vertices.push(0.0);
+			vertices.push(z / lengthXZ);
+			// bottom
+			vertices.push(Math.cos(angle) * avgDiameter);
+			vertices.push(height / -2.0);
+			vertices.push(Math.sin(angle) * avgDiameter);
+			vertices.push(0.0);
+			vertices.push(-1.0);
+			vertices.push(0.0);
+			// in
+			var x = Math.cos(angle) * innerDiameter;
+			var z = Math.sin(angle) * innerDiameter;
+			var lengthXZ = Math.sqrt(x*x + z*z);
+			vertices.push(x);
+			vertices.push(0.0);
+			vertices.push(z);
+			vertices.push(-x / lengthXZ);
+			vertices.push(0.0);
+			vertices.push(-z / lengthXZ);
 		}
 		return vertices;
 	}
@@ -144,39 +175,45 @@ class RingShape {
 
 		// calculate indices
 		var indices = new Array<Int>();
-		var numVertices = numSegments * 8;
+		var numVertices = numSegments * 12;
 		for (segment in 0...numSegments) {
 			var segment_indices = new Array<Int>();
-			segment_indices.push(segment * 8);
-			segment_indices.push(segment * 8 + 1);
-			segment_indices.push(segment * 8 + 2);
-			segment_indices.push(segment * 8 + 3);
-			segment_indices.push(segment * 8 + 4);
-			segment_indices.push(segment * 8 + 5);
-			segment_indices.push(segment * 8 + 6);
-			segment_indices.push(segment * 8 + 7);
-			segment_indices.push((segment * 8 + 8) % numVertices);
-			segment_indices.push((segment * 8 + 9) % numVertices);
-			segment_indices.push((segment * 8 + 10) % numVertices);
-			segment_indices.push((segment * 8 + 11) % numVertices);
+			for (v in 0...20) {
+				segment_indices.push((segment * 12 + v) % numVertices);
+			}
 
 			// add all 16 triangles of the ring segment
 			for (i in 0...4) {
-				indices.push(segment_indices[i]);
-				indices.push(segment_indices[(i + 1) % 4]);
-				indices.push(segment_indices[i + 4]);
+				/*
 
-				indices.push(segment_indices[(i + 1) % 4]);
-				indices.push(segment_indices[(i + 1) % 4 + 8]);
-				indices.push(segment_indices[i + 4]);
+				i0 -- i3
+				| \  / |
+				|  i4  |
+				| /  \ |
+				i1 -- i2
 
-				indices.push(segment_indices[(i + 1) % 4 + 8]);
-				indices.push(segment_indices[i + 8]);
-				indices.push(segment_indices[i + 4]);
+				*/
+				var i0 = 2 * i + 1;
+				var i1 = (2 * (i + 1)) % 8;
+				var i2 = (2 * (i + 1)) % 8 + 12;
+				var i3 = 2 * i + 13;
+				var i4 = i + 8;
 
-				indices.push(segment_indices[i + 8]);
-				indices.push(segment_indices[i]);
-				indices.push(segment_indices[i + 4]);
+				indices.push(segment_indices[i0]);
+				indices.push(segment_indices[i1]);
+				indices.push(segment_indices[i4]);
+
+				indices.push(segment_indices[i1]);
+				indices.push(segment_indices[i2]);
+				indices.push(segment_indices[i4]);
+
+				indices.push(segment_indices[i2]);
+				indices.push(segment_indices[i3]);
+				indices.push(segment_indices[i4]);
+
+				indices.push(segment_indices[i3]);
+				indices.push(segment_indices[i0]);
+				indices.push(segment_indices[i4]);
 			}
 		}
 

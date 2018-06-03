@@ -3,6 +3,7 @@ package;
 import haxebullet.Bullet;
 import kha.Framebuffer;
 import kha.Color;
+import kha.Blob;
 import kha.graphics4.CompareMode;
 import kha.graphics4.ConstantLocation;
 import kha.graphics4.IndexBuffer;
@@ -32,20 +33,21 @@ class MeshLoader {
 	private var modelMatrix: FastMatrix4 = FastMatrix4.identity();
 	public var started: Bool = false;
 	
-	public function new() {
-		start();
+	public function new(ogexAsset:Blob, scale:Float=1.0) {
+		start(ogexAsset, scale);
 	}
 	
-	private function start(): Void {
-		var data = new OgexData(Assets.blobs.body_ogex.toString());
+	private function start(ogexAsset:Blob, scale:Float): Void {
+		var data = new OgexData(ogexAsset.toString());
 		var vertices = data.geometryObjects[0].mesh.vertexArrays[0].values;
 		var normals = data.geometryObjects[0].mesh.vertexArrays[1].values;
 		var indices = data.geometryObjects[0].mesh.indexArray.values;
 
 		// scale the mesh
-		// for (i in 0...vertices.length) {
-		// 	vertices[i] = vertices[i] * 20;
-		// }
+		for (i in 0...vertices.length) {
+			vertices[i] = vertices[i] * scale;
+		}
+
 		convexHull = BtConvexHullShape.create();
 		for (i in 0...Std.int(vertices.length / 3)) {
 			var vector0 = BtVector3.create(vertices[i * 3 + 0], vertices[i * 3 + 1], vertices[i * 3 + 2]);

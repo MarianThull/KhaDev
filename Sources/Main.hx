@@ -35,17 +35,17 @@ class Main {
 	}
 
 	static function init2(): Void {
-		var mesh = new MeshLoader();
-		var mesh2 = new MeshLoader();
-		var mesh3 = new MeshLoader();
+		var mesh = new MeshLoader(Assets.blobs.body_ogex, 0.02);
+		var mesh2 = new MeshLoader(Assets.blobs.body_ogex, 0.02);
+		var mesh3 = new MeshLoader(Assets.blobs.body_ogex, 0.02);
 		meshes.push(mesh);
 		meshes.push(mesh2);
 		meshes.push(mesh3);
 
 		initPhysics();
 
-		ring = new RingShape(100.0, 50.0, 30.0, 16, 10, dynamicsWorld);
-		ring.setPosition(0, 300, 0);
+		ring = new RingShape(2.0, 1.0, 0.5, 16, 16, dynamicsWorld);
+		ring.setPosition(0, 30, 0);
 
 		System.notifyOnRender(render);
 		Scheduler.addTimeTask(update, 0, 1 / 60);
