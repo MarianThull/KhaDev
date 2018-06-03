@@ -10,8 +10,7 @@ import kha.math.FastMatrix4;
 import kha.math.FastVector3;
 
 class Main {
-	static var meshes = new Array<MeshLoader>();
-	static var rings = new Array<RingShape>();
+	static var meshes = new Array<MyShape>();
 	static var dynamicsWorld;
 	static var viewMatrix = FastMatrix4.lookAt(new FastVector3(0, 50, -25), new FastVector3(0, 0, 0), new FastVector3(0, 1, 0));
 
@@ -42,14 +41,14 @@ class Main {
 		initPhysics();
 
 		for (i in 0...4) {
-			var mesh = new MeshLoader(Assets.blobs.body_ogex, 0.02, dynamicsWorld);
+			var mesh = new MeshLoader(Assets.blobs.body_ogex, dynamicsWorld, 0.02);
 			meshes.push(mesh);
 			mesh.setPosition(0.0, 15.0 + i * 5.0, 0.0);	
 		}
 
 		for (i in 0...5) {
 			var ring = new RingShape(2.0, 1.0, 0.5, 16, 16, dynamicsWorld);
-			rings.push(ring);
+			meshes.push(ring);
 			ring.setPosition(0, 17.5 + i * 5.0, 0);
 		}
 
@@ -86,9 +85,6 @@ class Main {
 		for (i in 0...meshes.length) {
 			meshes[i].updatePosition();
 		}
-		for (i in 0...rings.length) {
-			rings[i].updatePosition();
-		}
 	}
 
 	static function render(framebuffer: Framebuffer): Void {
@@ -98,9 +94,6 @@ class Main {
 
 		for (i in 0...meshes.length) {
 			meshes[i].render(g, viewMatrix);
-		}
-		for (i in 0...rings.length) {
-			rings[i].render(g, viewMatrix);
 		}
 
 		g.end();
