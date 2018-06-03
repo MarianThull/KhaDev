@@ -9,6 +9,7 @@ import kha.Assets;
 
 class Main {
 	static var meshes = new Array<MeshLoader>();
+	static var ring;
 
 	public static function main() {
 		System.init({title: "PhysicsSample", width: 1024, height: 768}, function () {
@@ -42,6 +43,9 @@ class Main {
 		meshes.push(mesh3);
 
 		initPhysics();
+
+		ring = new RingShape(100.0, 50.0, 30.0, 16, 10, dynamicsWorld);
+		ring.setPosition(0, 300, 0);
 
 		System.notifyOnRender(render);
 		Scheduler.addTimeTask(update, 0, 1 / 60);
@@ -101,6 +105,7 @@ class Main {
 			meshes[i].updatePosition(trans);
 			// meshes[i].updatePosition(trans.getOrigin().x(), trans.getOrigin().y(), trans.getOrigin().z());
 		}
+		ring.updatePosition();
 	}
 
 	static function render(framebuffer: Framebuffer): Void {
@@ -111,6 +116,7 @@ class Main {
 		for (i in 0...meshes.length) {
 			meshes[i].render(g);
 		}
+		ring.render(g);
 
 		g.end();
 	}
