@@ -1,36 +1,22 @@
 package;
 
 import haxebullet.Bullet;
-import kha.graphics4.CompareMode;
-import kha.graphics4.ConstantLocation;
 import kha.graphics4.IndexBuffer;
-import kha.graphics4.Graphics;
-import kha.graphics4.PipelineState;
 import kha.graphics4.Usage;
 import kha.graphics4.VertexBuffer;
 import kha.graphics4.VertexData;
 import kha.graphics4.VertexStructure;
-import kha.Shaders;
-import kha.math.FastMatrix4;
-import kha.System;
-import kha.math.Quaternion;
 
-class RingShape {
-	private var pipeline: PipelineState;
-	private var vertexBuffer: VertexBuffer;
-	private var indexBuffer: IndexBuffer;
-	private var rotationLocation: ConstantLocation;
-	private var projectionLocation: ConstantLocation;
-	private var viewLocation: ConstantLocation;
-	private var modelLocation: ConstantLocation;
-	private var modelMatrix: FastMatrix4 = FastMatrix4.identity();
-	private var ringRigidBody: BtRigidBody;
-	
+class RingShape extends MyShape {
+	var physicsVertices: Array<Float>;
+	var renderVertices: Array<Float>;
+	var numSegments: Int;
+
 	public function new(outerDiameter:Float, innerDiameter:Float, height:Float, renderResolution:Int, physicsResolution:Int, dynamicsWorld:BtDiscreteDynamicsWorld) {
-		var physicsVertices = createVerticesPhysics(outerDiameter, innerDiameter, height, physicsResolution);
-		registerPhysicsObject(physicsVertices, dynamicsWorld);
-		var renderVertices = createVerticesRender(outerDiameter, innerDiameter, height, renderResolution);
-		prepareRenderObject(renderVertices, renderResolution);
+		numSegments = renderResolution;
+		physicsVertices = createVerticesPhysics(outerDiameter, innerDiameter, height, physicsResolution);
+		renderVertices = createVerticesRender(outerDiameter, innerDiameter, height, renderResolution);
+		super(dynamicsWorld);
 	}
 
 	private function createVerticesPhysics(outerDiameter:Float, innerDiameter:Float, height:Float, segments:Int): Array<Float> {
@@ -133,42 +119,30 @@ class RingShape {
 		return vertices;
 	}
 	
-	private function registerPhysicsObject(vertices:Array<Float>, dynamicsWorld: BtDiscreteDynamicsWorld): Void {
-		var compoundShape:BtCompoundShape = BtCompoundShape.create();
-		for (i in 0...Std.int(vertices.length / 12)) {
+	override function calcCollisionShape(): Void {
+		shape = BtCompoundShape.create();
+		for (i in 0...Std.int(physicsVertices.length / 12)) {
 			var convexHull = BtConvexHullShape.create();
 			for (j in (i * 4)...((i + 2) * 4)) {
-				var index = Std.int(j % (vertices.length / 3));
-				var vector0 = BtVector3.create(vertices[index * 3 + 0], vertices[index * 3 + 1], vertices[index * 3 + 2]);
+				var index = Std.int(j % (physicsVertices.length / 3));
+				var vector0 = BtVector3.create(physicsVertices[index * 3 + 0], physicsVertices[index * 3 + 1], physicsVertices[index * 3 + 2]);
 				convexHull.addPoint(vector0, true);
 			}
 			var childTransform = BtTransform.create();
 			childTransform.setIdentity();
-			compoundShape.addChildShape(childTransform, convexHull);
+			cast(shape, BtCompoundShape).addChildShape(childTransform, convexHull);
 		}
-
-		var ringTransform = BtTransform.create();
-		ringTransform.setIdentity();
-		ringTransform.setOrigin(BtVector3.create(0, 100, 0));
-		var centerOfMassOffsetRingTransform = BtTransform.create();
-		centerOfMassOffsetRingTransform.setIdentity();
-		var ringMotionState = BtDefaultMotionState.create(ringTransform, centerOfMassOffsetRingTransform);
-		var ringInertia = BtVector3.create(0, 0, 0);
-		compoundShape.calculateLocalInertia(1, ringInertia);
-		var ringRigidBodyCI = BtRigidBodyConstructionInfo.create(1, ringMotionState, compoundShape, ringInertia);
-		ringRigidBody = BtRigidBody.create(ringRigidBodyCI);
-		dynamicsWorld.addRigidBody(ringRigidBody);
 	}
 
-	private function prepareRenderObject(vertices:Array<Float>, numSegments:Int): Void {
+	override function prepareBuffer(): VertexStructure {
 		// create vertex buffer
 		var structure = new VertexStructure();
 		structure.add('pos', VertexData.Float3);
 		structure.add('normal', VertexData.Float3);
-		vertexBuffer = new VertexBuffer(Std.int(vertices.length / 6), structure, Usage.StaticUsage);
+		vertexBuffer = new VertexBuffer(Std.int(renderVertices.length / 6), structure, Usage.StaticUsage);
 		var buffer = vertexBuffer.lock();
-		for (i in 0...vertices.length) {
-			buffer.set(i, vertices[i]);
+		for (i in 0...renderVertices.length) {
+			buffer.set(i, renderVertices[i]);
 		}
 		vertexBuffer.unlock();
 
@@ -224,46 +198,6 @@ class RingShape {
 		}
 		indexBuffer.unlock();
 
-		// create pipeline
-		pipeline = new PipelineState();
-		pipeline.inputLayout = [structure];
-		pipeline.vertexShader = Shaders.mesh_vert;
-		pipeline.fragmentShader = Shaders.mesh_frag;
-		pipeline.depthWrite = true;
-		pipeline.depthMode = CompareMode.Less;
-		// pipeline.cullMode = CullMode.None;
-		pipeline.compile();
-		
-		projectionLocation = pipeline.getConstantLocation("projection");
-		viewLocation = pipeline.getConstantLocation("view");
-		modelLocation = pipeline.getConstantLocation("model");
-	}
-	
-	public function updatePosition(): Void {
-		var trans = BtTransform.create();
-		ringRigidBody.getMotionState().getWorldTransform(trans);
-		var origin = trans.getOrigin();
-		var rot = trans.getRotation();
-		var rotKha = new Quaternion(rot.x(), rot.y(), rot.z(), rot.w());
-		var rotMat = FastMatrix4.fromMatrix4(rotKha.matrix());
-		modelMatrix = FastMatrix4.translation(origin.x(), origin.y(), origin.z()).multmat(rotMat);
-	}
-
-	public function setPosition(x:Float, y:Float, z:Float): Void {
-		var trans = BtTransform.create();
-		trans.setIdentity();
-		trans.setOrigin(BtVector3.create(x, y, z));
-		ringRigidBody.setCenterOfMassTransform(trans);
-	}
-
-	public function render(g:Graphics, view:FastMatrix4): Void {
-		g.setPipeline(pipeline);
-		g.setMatrix(projectionLocation, FastMatrix4.perspectiveProjection(45, System.windowWidth(0) / System.windowHeight(0), 0.1, 1000));
-		g.setMatrix(viewLocation, view);
-		g.setMatrix(modelLocation, modelMatrix);
-		
-		g.setIndexBuffer(indexBuffer);
-		g.setVertexBuffer(vertexBuffer);
-		g.drawIndexedVertices();
+		return structure;
 	}
 }

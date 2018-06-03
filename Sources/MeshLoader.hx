@@ -16,13 +16,12 @@ import kha.math.FastMatrix4;
 import kha.System;
 import kha.math.Quaternion;
 
-class MeshLoader {
+class MeshLoader extends MyShape {
 	private var rigidBody: BtRigidBody;
 	private var convexHull: BtConvexHullShape;
 	private var pipeline: PipelineState;
 	private var vertexBuffer: VertexBuffer;
 	private var indexBuffer: IndexBuffer;
-	private var rotationLocation: ConstantLocation;
 	private var projectionLocation: ConstantLocation;
 	private var viewLocation: ConstantLocation;
 	private var modelLocation: ConstantLocation;
