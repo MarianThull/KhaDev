@@ -46,7 +46,7 @@ class MyShape {
 	}
 
 	private function calcCollisionShape(): Void {
-		
+
 	}
 
 	private function initRenderPipeline(): Void {
@@ -86,9 +86,9 @@ class MyShape {
 		rigidBody.setCenterOfMassTransform(trans);
 	}
 
-	public function render(g:Graphics, view:FastMatrix4): Void {
+	public function render(g:Graphics, projection:FastMatrix4, view:FastMatrix4): Void {
 		g.setPipeline(pipeline);
-		g.setMatrix(projectionLocation, FastMatrix4.perspectiveProjection(45, System.windowWidth(0) / System.windowHeight(0), 0.1, 1000));
+		g.setMatrix(projectionLocation, projection);
 		g.setMatrix(viewLocation, view);
 		g.setMatrix(modelLocation, modelMatrix);
 		

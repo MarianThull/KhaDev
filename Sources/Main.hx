@@ -13,6 +13,7 @@ class Main {
 	static var meshes = new Array<MyShape>();
 	static var dynamicsWorld;
 	static var viewMatrix = FastMatrix4.lookAt(new FastVector3(0, 50, -25), new FastVector3(0, 0, 0), new FastVector3(0, 1, 0));
+	static var projectionMatrix: FastMatrix4;
 
 	public static function main() {
 		System.init({title: "PhysicsSample", width: 1024, height: 768}, function () {
@@ -38,6 +39,8 @@ class Main {
 	}
 
 	static function init2(): Void {
+		projectionMatrix = FastMatrix4.perspectiveProjection(45, System.windowWidth(0) / System.windowHeight(0), 0.1, 1000);
+		
 		initPhysics();
 
 		for (i in 0...4) {
@@ -93,7 +96,7 @@ class Main {
 		g.clear(Color.Black, Math.POSITIVE_INFINITY);
 
 		for (i in 0...meshes.length) {
-			meshes[i].render(g, viewMatrix);
+			meshes[i].render(g, projectionMatrix, viewMatrix);
 		}
 
 		g.end();
