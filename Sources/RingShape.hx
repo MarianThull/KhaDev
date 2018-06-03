@@ -38,7 +38,7 @@ class RingShape {
 		var vertices = new Array<Float>();
 
 		for (i in 0...segments) {
-			var angle = (2 * Math.PI / segments) * i;
+			var angle:Float = (2 * Math.PI / segments) * i;
 
 			for (j in 0...4) {
 				var is_lower = Std.int(j / 2);
@@ -61,27 +61,44 @@ class RingShape {
 				}
 			}
 
-			/* for (is_lower in 0...2) {
-				for (is_outer in 0...2) {
-					// inner upper vertex
-					var x = Math.cos(angle) * (innerDiameter * (1 - is_outer) + outerDiameter * is_outer);
-					var y = Math.pow(-1.0, is_lower) * height / 2.0;
-					var z = Math.sin(angle) * (innerDiameter * (1 - is_outer) + outerDiameter * is_outer);
-					vertices.push(x);
-					vertices.push(y);
-					vertices.push(z);
-					if (createNormals) {
-						var lengthXZ = Math.sqrt(x*x + z*z);
-						var xn = ((is_outer * 2 - 1) * x / lengthXZ) / Math.sqrt(2.0);
-						var zn = ((is_outer * 2 - 1) * z / lengthXZ) / Math.sqrt(2.0);
-						var yn = -(is_lower * 2 - 1) / Math.sqrt(2.0);
-						vertices.push(xn);
-						vertices.push(yn);
-						vertices.push(zn);
-					}
-				}
-			} */
-			
+			if (usageRender) {
+				angle = (2 * Math.PI / segments) * (i + 0.5);
+				var avgDiameter = (outerDiameter + innerDiameter) / 2.0;
+				// top
+				vertices.push(Math.cos(angle) * avgDiameter);
+				vertices.push(height / 2.0);
+				vertices.push(Math.sin(angle) * avgDiameter);
+				vertices.push(0.0);
+				vertices.push(1.0);
+				vertices.push(0.0);
+				// out
+				var x = Math.cos(angle) * outerDiameter;
+				var z = Math.sin(angle) * outerDiameter;
+				var lengthXZ = Math.sqrt(x*x + z*z);
+				vertices.push(x);
+				vertices.push(0.0);
+				vertices.push(z);
+				vertices.push(x / lengthXZ);
+				vertices.push(0.0);
+				vertices.push(z / lengthXZ);
+				// bottom
+				vertices.push(Math.cos(angle) * avgDiameter);
+				vertices.push(height / -2.0);
+				vertices.push(Math.sin(angle) * avgDiameter);
+				vertices.push(0.0);
+				vertices.push(-1.0);
+				vertices.push(0.0);
+				// in
+				var x = Math.cos(angle) * innerDiameter;
+				var z = Math.sin(angle) * innerDiameter;
+				var lengthXZ = Math.sqrt(x*x + z*z);
+				vertices.push(x);
+				vertices.push(0.0);
+				vertices.push(z);
+				vertices.push(-x / lengthXZ);
+				vertices.push(0.0);
+				vertices.push(-z / lengthXZ);
+			}		
 		}
 		return vertices;
 	}
@@ -127,27 +144,39 @@ class RingShape {
 
 		// calculate indices
 		var indices = new Array<Int>();
-		var numVertices = numSegments * 4;
+		var numVertices = numSegments * 8;
 		for (segment in 0...numSegments) {
 			var segment_indices = new Array<Int>();
-			segment_indices.push(segment * 4);
-			segment_indices.push(segment * 4 + 1);
-			segment_indices.push(segment * 4 + 2);
-			segment_indices.push(segment * 4 + 3);
-			segment_indices.push(((segment + 1) * 4) % numVertices);
-			segment_indices.push(((segment + 1) * 4 + 1) % numVertices);
-			segment_indices.push(((segment + 1) * 4 + 2) % numVertices);
-			segment_indices.push(((segment + 1) * 4 + 3) % numVertices);
+			segment_indices.push(segment * 8);
+			segment_indices.push(segment * 8 + 1);
+			segment_indices.push(segment * 8 + 2);
+			segment_indices.push(segment * 8 + 3);
+			segment_indices.push(segment * 8 + 4);
+			segment_indices.push(segment * 8 + 5);
+			segment_indices.push(segment * 8 + 6);
+			segment_indices.push(segment * 8 + 7);
+			segment_indices.push((segment * 8 + 8) % numVertices);
+			segment_indices.push((segment * 8 + 9) % numVertices);
+			segment_indices.push((segment * 8 + 10) % numVertices);
+			segment_indices.push((segment * 8 + 11) % numVertices);
 
-			// add all 8 triangles of the ring segment
+			// add all 16 triangles of the ring segment
 			for (i in 0...4) {
 				indices.push(segment_indices[i]);
 				indices.push(segment_indices[(i + 1) % 4]);
-				indices.push(segment_indices[(i + 1) % 4 + 4]);
+				indices.push(segment_indices[i + 4]);
 
+				indices.push(segment_indices[(i + 1) % 4]);
+				indices.push(segment_indices[(i + 1) % 4 + 8]);
+				indices.push(segment_indices[i + 4]);
+
+				indices.push(segment_indices[(i + 1) % 4 + 8]);
+				indices.push(segment_indices[i + 8]);
+				indices.push(segment_indices[i + 4]);
+
+				indices.push(segment_indices[i + 8]);
 				indices.push(segment_indices[i]);
-				indices.push(segment_indices[(i + 1) % 4 + 4]);
-				indices.push(segment_indices[i % 4 + 4]);
+				indices.push(segment_indices[i + 4]);
 			}
 		}
 
