@@ -7,16 +7,32 @@ import kha.graphics4.VertexBuffer;
 import kha.graphics4.VertexData;
 import kha.graphics4.VertexStructure;
 
+class RingDesc {
+	public var innerDiameter: Float;
+	public var outerDiameter: Float;
+	public var height: Float;
+	public var physicsResolution: Int;
+	public var renderResolution: Int;
+
+	public function new(innerDiameter:Float, outerDiameter:Float, height:Float, physicsResolution:Int, renderResolution:Int) {
+		this.innerDiameter = innerDiameter;
+		this.outerDiameter = outerDiameter;
+		this.height = height;
+		this.physicsResolution = physicsResolution;
+		this.renderResolution = renderResolution;
+	}
+}
+
 class RingShape extends MyShape {
 	var physicsVertices: Array<Float>;
 	var renderVertices: Array<Float>;
 	var numSegments: Int;
 
-	public function new(outerDiameter:Float, innerDiameter:Float, height:Float, renderResolution:Int, physicsResolution:Int, dynamicsWorld:BtDiscreteDynamicsWorld) {
-		numSegments = renderResolution;
-		physicsVertices = createVerticesPhysics(outerDiameter, innerDiameter, height, physicsResolution);
-		renderVertices = createVerticesRender(outerDiameter, innerDiameter, height, renderResolution);
-		super(dynamicsWorld);
+	public function new(ringDesc:RingDesc, mass:Float, dynamicsWorld:BtDiscreteDynamicsWorld) {
+		numSegments = ringDesc.renderResolution;
+		physicsVertices = createVerticesPhysics(ringDesc.outerDiameter, ringDesc.innerDiameter, ringDesc.height, ringDesc.physicsResolution);
+		renderVertices = createVerticesRender(ringDesc.outerDiameter, ringDesc.innerDiameter, ringDesc.height, ringDesc.renderResolution);
+		super(mass, dynamicsWorld);
 	}
 
 	private function createVerticesPhysics(outerDiameter:Float, innerDiameter:Float, height:Float, segments:Int): Array<Float> {

@@ -10,7 +10,6 @@ import kha.graphics4.VertexBuffer;
 import kha.graphics4.VertexStructure;
 import kha.Shaders;
 import kha.math.FastMatrix4;
-import kha.System;
 import kha.math.Quaternion;
 
 class MyShape {
@@ -23,8 +22,10 @@ class MyShape {
 	private var modelMatrix: FastMatrix4 = FastMatrix4.identity();
 	private var rigidBody: BtRigidBody;
 	private var shape:BtCollisionShape;
+	private var mass:Float;
 
-	public function new(dynamicsWorld:BtDynamicsWorld) {
+	public function new(mass:Float, dynamicsWorld:BtDynamicsWorld) {
+		this.mass = mass;
 		initPhysicsObject(dynamicsWorld);
 		initRenderPipeline();
 	}
@@ -34,13 +35,13 @@ class MyShape {
 
 		var trans = BtTransform.create();
 		trans.setIdentity();
-		trans.setOrigin(BtVector3.create(0, 100, 0));
+		trans.setOrigin(BtVector3.create(0, 0, 0));
 		var centerOfMassOffsetTransform = BtTransform.create();
 		centerOfMassOffsetTransform.setIdentity();
 		var motionState = BtDefaultMotionState.create(trans, centerOfMassOffsetTransform);
 		var inertia = BtVector3.create(0, 0, 0);
-		shape.calculateLocalInertia(1, inertia);
-		var rigidBodyCI = BtRigidBodyConstructionInfo.create(1, motionState, shape, inertia);
+		shape.calculateLocalInertia(mass, inertia);
+		var rigidBodyCI = BtRigidBodyConstructionInfo.create(mass, motionState, shape, inertia);
 		rigidBody = BtRigidBody.create(rigidBodyCI);
 		dynamicsWorld.addRigidBody(rigidBody);
 	}
@@ -70,13 +71,15 @@ class MyShape {
 	}
 
 	public function updatePosition(): Void {
-		var trans = BtTransform.create();
-		rigidBody.getMotionState().getWorldTransform(trans);
-		var origin = trans.getOrigin();
-		var rot = trans.getRotation();
-		var rotKha = new Quaternion(rot.x(), rot.y(), rot.z(), rot.w());
-		var rotMat = FastMatrix4.fromMatrix4(rotKha.matrix());
-		modelMatrix = FastMatrix4.translation(origin.x(), origin.y(), origin.z()).multmat(rotMat);
+		if (mass > 0) {
+			var trans = BtTransform.create();
+			rigidBody.getMotionState().getWorldTransform(trans);
+			var origin = trans.getOrigin();
+			var rot = trans.getRotation();
+			var rotKha = new Quaternion(rot.x(), rot.y(), rot.z(), rot.w());
+			var rotMat = FastMatrix4.fromMatrix4(rotKha.matrix());
+			modelMatrix = FastMatrix4.translation(origin.x(), origin.y(), origin.z()).multmat(rotMat);
+		}
 	}
 
 	public function setPosition(x:Float, y:Float, z:Float): Void {
@@ -84,6 +87,7 @@ class MyShape {
 		trans.setIdentity();
 		trans.setOrigin(BtVector3.create(x, y, z));
 		rigidBody.setCenterOfMassTransform(trans);
+		modelMatrix = FastMatrix4.translation(x, y, z);
 	}
 
 	public function render(g:Graphics, projection:FastMatrix4, view:FastMatrix4): Void {

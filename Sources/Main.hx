@@ -12,7 +12,7 @@ import kha.math.FastVector3;
 class Main {
 	static var meshes = new Array<MyShape>();
 	static var dynamicsWorld;
-	static var viewMatrix = FastMatrix4.lookAt(new FastVector3(0, 50, -25), new FastVector3(0, 0, 0), new FastVector3(0, 1, 0));
+	static var viewMatrix = FastMatrix4.lookAt(new FastVector3(0, 40, -5), new FastVector3(0, 0, 0), new FastVector3(0, 1, 0));
 	static var projectionMatrix: FastMatrix4;
 
 	public static function main() {
@@ -44,22 +44,28 @@ class Main {
 		initPhysics();
 
 		for (i in 0...4) {
-			var mesh = new MeshLoader(Assets.blobs.body_ogex, dynamicsWorld, 0.02);
+			var mesh = new MeshLoader(Assets.blobs.body_ogex, 1.0, dynamicsWorld, 0.02);
 			meshes.push(mesh);
 			mesh.setPosition(0.0, 15.0 + i * 5.0, 0.0);	
 		}
 
+		var ringDesc = new RingShape.RingDesc(1.0, 2.0, 0.5, 16, 16);
 		for (i in 0...5) {
-			var ring = new RingShape(2.0, 1.0, 0.5, 16, 16, dynamicsWorld);
+			var ring = new RingShape(ringDesc, 1.0, dynamicsWorld);
 			meshes.push(ring);
 			ring.setPosition(0, 17.5 + i * 5.0, 0);
 		}
 
+		var cylinder:MyShape = new MeshLoader(Assets.blobs.cylinder_ogex, 0.0, dynamicsWorld, 1.0);
+		meshes.push(cylinder);
+		// cylinder.setPosition(5.0, 1.0, -5.0);
+		var ring = new RingShape(ringDesc, 1.0, dynamicsWorld);
+		meshes.push(ring);
+		ring.setPosition(5.7, 10.0, -5.0);
+
 		System.notifyOnRender(render);
 		Scheduler.addTimeTask(update, 0, 1 / 60);
 	}
-
-	
 
 	static function initPhysics(): Void {
 		var collisionConfiguration = BtDefaultCollisionConfiguration.create();

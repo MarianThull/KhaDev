@@ -12,9 +12,9 @@ class MeshLoader extends MyShape {
 	private var started: Bool = false;
 	private var structure: VertexStructure;
 	
-	public function new(ogexAsset:Blob, dynamicsWorld:BtDiscreteDynamicsWorld, scale:Float=1.0) {
+	public function new(ogexAsset:Blob, mass:Float, dynamicsWorld:BtDiscreteDynamicsWorld, scale:Float=1.0) {
 		loadOgex(ogexAsset, scale);
-		super(dynamicsWorld);
+		super(mass, dynamicsWorld);
 	}
 	
 	private function loadOgex(ogexAsset:Blob, scale:Float): Void {
@@ -23,6 +23,9 @@ class MeshLoader extends MyShape {
 		var vertices = data.geometryObjects[0].mesh.vertexArrays[0].values;
 		var normals = data.geometryObjects[0].mesh.vertexArrays[1].values;
 		var indices = data.geometryObjects[0].mesh.indexArray.values;
+
+		// apply transform
+		var transformedVertices = new Array<Float>();
 
 		// scale the mesh
 		for (i in 0...vertices.length) {
