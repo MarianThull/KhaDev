@@ -12,8 +12,9 @@ import kha.math.FastVector3;
 class Main {
 	static var meshes = new Array<MyShape>();
 	static var dynamicsWorld;
-	static var viewMatrix = FastMatrix4.lookAt(new FastVector3(0, 40, -5), new FastVector3(0, 0, 0), new FastVector3(0, 1, 0));
+	static var viewMatrix = FastMatrix4.lookAt(new FastVector3(-5, 25, -25), new FastVector3(0, 0, 0), new FastVector3(0, 1, 0));
 	static var projectionMatrix: FastMatrix4;
+	static var floor: Floor;
 
 	public static function main() {
 		System.init({title: "PhysicsSample", width: 1024, height: 768}, function () {
@@ -43,20 +44,22 @@ class Main {
 		
 		initPhysics();
 
+		floor = new Floor(24.0);
+
 		for (i in 0...4) {
-			var mesh = new MeshLoader(Assets.blobs.body_ogex, 1.0, dynamicsWorld, 0.02);
+			var mesh = new MeshLoader(Assets.blobs.body_ogex, 1.0, dynamicsWorld, 1.0);
 			meshes.push(mesh);
 			mesh.setPosition(0.0, 15.0 + i * 5.0, 0.0);	
 		}
 
-		var ringDesc = new RingShape.RingDesc(1.0, 2.0, 0.5, 16, 16);
+		var ringDesc = new RingShape.RingDesc(1.0, 2.0, 0.5, 16, 32);
 		for (i in 0...5) {
 			var ring = new RingShape(ringDesc, 1.0, dynamicsWorld);
 			meshes.push(ring);
-			ring.setPosition(0, 17.5 + i * 5.0, 0);
+			ring.setPosition(0, 12.5 + i * 5.0, 0);
 		}
 
-		var cylinder:MyShape = new MeshLoader(Assets.blobs.cylinder_ogex, 0.0, dynamicsWorld, 1.0);
+		var cylinder:MyShape = new MeshLoader(Assets.blobs.cylinder_ogex, 0.0, dynamicsWorld, 3.0);
 		meshes.push(cylinder);
 		// cylinder.setPosition(5.0, 1.0, -5.0);
 		var ring = new RingShape(ringDesc, 1.0, dynamicsWorld);
@@ -100,6 +103,8 @@ class Main {
 		var g = framebuffer.g4;
 		g.begin();
 		g.clear(Color.Black, Math.POSITIVE_INFINITY);
+
+		floor.render(g, projectionMatrix, viewMatrix);
 
 		for (i in 0...meshes.length) {
 			meshes[i].render(g, projectionMatrix, viewMatrix);
