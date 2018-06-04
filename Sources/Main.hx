@@ -6,15 +6,12 @@ import kha.Framebuffer;
 import kha.Scheduler;
 import kha.System;
 import kha.Assets;
-import kha.math.FastMatrix4;
-import kha.math.FastVector3;
 
 class Main {
 	static var meshes = new Array<MyShape>();
 	static var dynamicsWorld;
-	static var viewMatrix = FastMatrix4.lookAt(new FastVector3(-5, 25, -25), new FastVector3(0, 0, 0), new FastVector3(0, 1, 0));
-	static var projectionMatrix: FastMatrix4;
 	static var floor: Floor;
+	static var camera: Camera;
 
 	public static function main() {
 		System.init({title: "PhysicsSample", width: 1024, height: 768}, function () {
@@ -40,7 +37,7 @@ class Main {
 	}
 
 	static function init2(): Void {
-		projectionMatrix = FastMatrix4.perspectiveProjection(45, System.windowWidth(0) / System.windowHeight(0), 0.1, 1000);
+		camera = new Camera();
 		
 		initPhysics();
 
@@ -93,6 +90,7 @@ class Main {
 
 	static function update(): Void {
 		dynamicsWorld.stepSimulation(1 / 60);
+		camera.update(1 / 60);
 	
 		for (i in 0...meshes.length) {
 			meshes[i].updatePosition();
@@ -104,10 +102,10 @@ class Main {
 		g.begin();
 		g.clear(Color.Black, Math.POSITIVE_INFINITY);
 
-		floor.render(g, projectionMatrix, viewMatrix);
+		floor.render(g, camera.projectionMatrix, camera.viewMatrix);
 
 		for (i in 0...meshes.length) {
-			meshes[i].render(g, projectionMatrix, viewMatrix);
+			meshes[i].render(g, camera.projectionMatrix, camera.viewMatrix);
 		}
 
 		g.end();
